@@ -1,17 +1,18 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
+import Index from "./pages/Index.jsx";
+import EmployeeSignUp from "./pages/EmployeeSignUp.jsx";
+import Login from "./pages/Login.jsx";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import EmployerDashboard from "./pages/EmployerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const RoleRoute = ({ children, role }: { children: JSX.Element; role: string }) => {
+const RoleRoute = ({ children, role }) => {
   const myRole = localStorage.getItem("role");
   if (myRole !== role) {
     return <Navigate to="/" />;
@@ -27,6 +28,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<EmployeeSignUp />} />
           <Route
             path="/employee/*"
             element={
