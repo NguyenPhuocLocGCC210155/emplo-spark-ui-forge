@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 const Index = () => {
   const navigate = useNavigate();
 
-  const handleRoleSelect = (role: "employee" | "employer") => {
+  // FIX: Remove TypeScript type annotation from parameter!
+  const handleRoleSelect = (role) => {
     localStorage.setItem("role", role);
     if (role === "employee") {
       navigate("/employee");
@@ -48,3 +49,4 @@ const Index = () => {
 };
 
 export default Index;
+
