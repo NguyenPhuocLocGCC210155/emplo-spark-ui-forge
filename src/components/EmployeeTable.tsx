@@ -1,8 +1,8 @@
-
-import React from "react";
-import { Employee } from "@/types";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { Employee } from "@/types";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface EmployeeTableProps {
   employees: Employee[];
@@ -14,6 +14,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
   showExtra = false,
 }) => {
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
   const filtered = employees.filter(
     (e) =>
       e.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -40,6 +41,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
               <th className="px-4 py-3">Role</th>
               {showExtra && <th className="px-4 py-3">Wage</th>}
               {showExtra && <th className="px-4 py-3">Day-off Balance</th>}
+              {showExtra && <th className="px-4 py-3">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -51,6 +53,17 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
                 {showExtra && <td className="px-4 py-2">{e.wage ?? "--"}</td>}
                 {showExtra && (
                   <td className="px-4 py-2">{e.dayOffBalance ?? "--"}</td>
+                )}
+                {showExtra && (
+                  <td className="px-4 py-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/employer/update/${e.id}`)}
+                    >
+                      Edit
+                    </Button>
+                  </td>
                 )}
               </tr>
             ))}

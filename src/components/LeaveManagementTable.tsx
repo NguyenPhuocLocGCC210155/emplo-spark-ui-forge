@@ -1,13 +1,28 @@
-
-import React from "react";
-import { LeaveRequest, Employee } from "@/types";
+import api from "@/api"; // axios instance đã cấu hình
 import { Button } from "@/components/ui/button";
+import React, { useEffect, useState } from "react";
 
-interface LeaveManagementTableProps {
-  leaveRequests: LeaveRequest[];
-  employees: Employee[];
-  onApprove: (requestId: number) => void;
-  onReject: (requestId: number) => void;
+interface LeaveRequestFromAPI {
+  id: number;
+  employee_id: number;
+  date: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  employee: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    hire_date: string;
+  };
+}
+
+interface LeaveRequest {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  date: string;
+  status: "pending" | "approved" | "rejected";
 }
 
 const statusColors = {
@@ -16,12 +31,70 @@ const statusColors = {
   rejected: "bg-red-100 text-red-700",
 } as const;
 
-const LeaveManagementTable: React.FC<LeaveManagementTableProps> = ({
-  leaveRequests,
-  employees,
-  onApprove,
-  onReject,
-}) => {
+const LeaveManagementTable: React.FC = () => {
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [processingId, setProcessingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      try {
+        const res = await api.get<LeaveRequestFromAPI[]>("/employer/leaves");
+        const mappedLeaves = res.data.map((item) => ({
+          id: item.id,
+          employeeId: item.employee_id,
+          employeeName: item.employee.name,
+          date: item.date,
+          status: item.status,
+        }));
+        setLeaveRequests(mappedLeaves);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch leave requests");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaves();
+  }, []);
+
+  const updateStatus = (id: number, newStatus: "approved" | "rejected") => {
+    setLeaveRequests((prev) =>
+      prev.map((lr) => (lr.id === id ? { ...lr, status: newStatus } : lr))
+    );
+  };
+
+  const handleApprove = async (id: number) => {
+    setProcessingId(id);
+    try {
+      await api.put(`/employer/leaves/${id}/approve`);
+      updateStatus(id, "approved");
+    } catch (err) {
+      console.error("Approve failed", err);
+      alert("Failed to approve leave request.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    setProcessingId(id);
+    try {
+      await api.put(`/employer/leaves/${id}/reject`);
+      updateStatus(id, "rejected");
+    } catch (err) {
+      console.error("Reject failed", err);
+      alert("Failed to reject leave request.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  if (loading) return <p>Loading leave requests...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+
   return (
     <div>
       <h2 className="text-lg font-semibold mb-3">All Leave Requests</h2>
@@ -42,7 +115,9 @@ const LeaveManagementTable: React.FC<LeaveManagementTableProps> = ({
                 <td className="px-4 py-2">{req.date}</td>
                 <td className="px-4 py-2">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold ${statusColors[req.status]}`}
+                    className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      statusColors[req.status]
+                    }`}
                   >
                     {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
                   </span>
@@ -53,16 +128,18 @@ const LeaveManagementTable: React.FC<LeaveManagementTableProps> = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => onApprove(req.id)}
+                        onClick={() => handleApprove(req.id)}
+                        disabled={processingId === req.id}
                       >
-                        Approve
+                        {processingId === req.id ? "Approving..." : "Approve"}
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => onReject(req.id)}
+                        onClick={() => handleReject(req.id)}
+                        disabled={processingId === req.id}
                       >
-                        Reject
+                        {processingId === req.id ? "Rejecting..." : "Reject"}
                       </Button>
                     </>
                   ) : (

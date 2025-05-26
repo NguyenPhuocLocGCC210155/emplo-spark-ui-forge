@@ -1,47 +1,14 @@
-
-import React, { useState } from "react";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import api from "@/api";
 import EmployeeTable from "@/components/EmployeeTable";
 import LeaveManagementTable from "@/components/LeaveManagementTable";
+import Navbar from "@/components/Navbar";
+import Sidebar from "@/components/Sidebar";
+import UpdateEmployeePage from "@/pages/UpdateEmployeePage";
 import { Employee, LeaveRequest } from "@/types";
-import { useNavigate, Routes, Route } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Route, Routes, useNavigate, useParams } from "react-router-dom";
+import NotFound from "./NotFound";
 
-// Initial employees and leave data (simulate all employees and leave requests)
-const INIT_EMPLOYEES: Employee[] = [
-  {
-    id: 1,
-    name: "Alice Smith",
-    email: "alice.smith@company.com",
-    role: "Developer",
-    wage: 70000,
-    dayOffBalance: 12,
-  },
-  {
-    id: 2,
-    name: "Bob Johnson",
-    email: "bob.johnson@company.com",
-    role: "Designer",
-    wage: 67000,
-    dayOffBalance: 8,
-  },
-  {
-    id: 3,
-    name: "Carol Lee",
-    email: "carol.lee@company.com",
-    role: "QA Tester",
-    wage: 62000,
-    dayOffBalance: 15,
-  },
-  {
-    id: 4,
-    name: "David Brown",
-    email: "david.brown@company.com",
-    role: "Support",
-    wage: 55000,
-    dayOffBalance: 16,
-  },
-];
 const INIT_LEAVE_REQUESTS: LeaveRequest[] = [
   {
     id: 1,
@@ -60,11 +27,41 @@ const INIT_LEAVE_REQUESTS: LeaveRequest[] = [
 ];
 
 const EmployerDashboard: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>(INIT_EMPLOYEES);
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(
-    INIT_LEAVE_REQUESTS
-  );
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [leaveRequests, setLeaveRequests] =
+    useState<LeaveRequest[]>(INIT_LEAVE_REQUESTS);
   const navigate = useNavigate();
+
+  // ✅ Kiểm tra role trước khi render
+  const role = localStorage.getItem("role");
+  if (role !== "employer") {
+    return <NotFound />;
+  }
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const res = await api.get("/employer");
+        const fetched = res.data;
+
+        // Map to match expected Employee type (with wage + dayOffBalance)
+        const mapped: Employee[] = fetched.map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          email: e.email,
+          role: e.role,
+          wage: e.wage ?? 0,
+          dayOffBalance: 10, // default fallback if not returned by API
+        }));
+
+        setEmployees(mapped);
+      } catch (err) {
+        console.error("Failed to fetch employees", err);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
 
   // Approve: set status and deduct day-off
   const handleApprove = (requestId: number) => {
@@ -76,13 +73,13 @@ const EmployerDashboard: React.FC = () => {
     // Deduct 1 day-off from employee
     const req = leaveRequests.find((r) => r.id === requestId);
     if (req) {
-      setEmployees((emps) =>
-        emps.map((emp) =>
-          emp.id === req.employeeId && emp.dayOffBalance !== undefined
-            ? { ...emp, dayOffBalance: Math.max(0, (emp.dayOffBalance || 0) - 1) }
-            : emp
-        )
+      const updatedEmployees = employees.map((emp) =>
+        emp.id === req.employeeId && emp.dayOffBalance !== undefined
+          ? { ...emp, dayOffBalance: Math.max(0, (emp.dayOffBalance || 0) - 1) }
+          : emp
       );
+      setEmployees(updatedEmployees);
+      localStorage.setItem("employees", JSON.stringify(updatedEmployees));
     }
   };
 
@@ -102,15 +99,27 @@ const EmployerDashboard: React.FC = () => {
       navigate("/employee");
     }
   };
+
   // Logout
   const handleLogout = () => {
     localStorage.removeItem("role");
     navigate("/");
   };
+  const UpdateWrapper: React.FC<{ employees: Employee[] }> = ({
+    employees,
+  }) => {
+    const { id } = useParams();
+    const employee = employees.find((e) => e.id === Number(id));
 
+    return <UpdateEmployeePage employee={employee} />;
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-green-50">
-      <Navbar currentRole="employer" onRoleChange={handleRoleChange} onLogout={handleLogout} />
+      <Navbar
+        currentRole="employer"
+        onRoleChange={handleRoleChange}
+        onLogout={handleLogout}
+      />
       <div className="flex w-full">
         <Sidebar currentRole="employer" />
         <main className="flex-1 px-6 py-8">
@@ -118,22 +127,28 @@ const EmployerDashboard: React.FC = () => {
             <Route
               path="/"
               element={
-                <div>
-                  <h1 className="text-2xl font-bold mb-6">Employee Management</h1>
+                <>
+                  <h1 className="text-2xl font-bold mb-6">
+                    Employee Management
+                  </h1>
                   <EmployeeTable employees={employees} showExtra />
-                </div>
+                </>
               }
             />
             <Route
               path="leaves"
               element={
                 <LeaveManagementTable
-                  leaveRequests={leaveRequests}
                   employees={employees}
+                  leaveRequests={leaveRequests}
                   onApprove={handleApprove}
                   onReject={handleReject}
                 />
               }
+            />
+            <Route
+              path="update/:id"
+              element={<UpdateWrapper employees={employees} />}
             />
           </Routes>
         </main>

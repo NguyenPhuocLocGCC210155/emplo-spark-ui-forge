@@ -1,8 +1,8 @@
-
-import React, { useState } from "react";
+import axios from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const EmployeeSignUp = () => {
@@ -11,16 +11,31 @@ const EmployeeSignUp = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
-    // Simulate account creation
-    alert("Signup successful! Please login.");
-    navigate("/login");
+
+    try {
+      const res = await axios.post("/auth/register", {
+        name,
+        email,
+        password,
+        role: "employee", // cần gửi role để backend xử lý đúng
+      });
+
+      alert("Signup successful! Please login.");
+      navigate("/login");
+    } catch (err) {
+      console.error("Signup failed:", err);
+      alert(err.response?.data?.message || "Signup failed");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white px-4">
-      <form onSubmit={handleSignUp} className="max-w-md w-full bg-white shadow-lg rounded-xl p-10 flex flex-col gap-6 items-center">
+      <form
+        onSubmit={handleSignUp}
+        className="max-w-md w-full bg-white shadow-lg rounded-xl p-10 flex flex-col gap-6 items-center"
+      >
         <h1 className="text-2xl font-bold text-gray-800">Employee Sign Up</h1>
         <div className="w-full">
           <Label htmlFor="name">Full Name</Label>
@@ -29,7 +44,7 @@ const EmployeeSignUp = () => {
             type="text"
             className="mt-1"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             required
             placeholder="Enter your full name"
           />
@@ -41,7 +56,7 @@ const EmployeeSignUp = () => {
             type="email"
             className="mt-1"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             required
             placeholder="Enter your email"
           />
@@ -53,7 +68,7 @@ const EmployeeSignUp = () => {
             type="password"
             className="mt-1"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             required
             placeholder="Enter a password"
           />

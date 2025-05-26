@@ -1,8 +1,8 @@
-
-import React, { useState } from "react";
+import axios from "@/api"; // đường dẫn bạn cấu hình ở bước trên
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
@@ -11,14 +11,28 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulated login logic
-    localStorage.setItem("role", role);
-    if (role === "employee") {
-      navigate("/employee");
-    } else {
-      navigate("/employer");
+    try {
+      const res = await axios.post("/auth/login", {
+        email,
+        password,
+        role,
+      });
+
+      const { token, user } = res.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("email", email); // hoặc "gmail"
+
+      if (user.role === "employee") {
+        navigate("/employee");
+      } else {
+        navigate("/employer");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Login failed");
     }
   };
 
@@ -26,7 +40,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-white px-4">
       <form onSubmit={handleLogin} className="max-w-md w-full bg-white shadow-lg rounded-xl p-10 flex flex-col gap-6 items-center">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Login</h1>
-        <div className="w-full">
+        {/* <div className="w-full">
           <Label htmlFor="role">Role</Label>
           <select
             id="role"
@@ -37,7 +51,7 @@ const Login = () => {
             <option value="employee">Employee</option>
             <option value="employer">Employer</option>
           </select>
-        </div>
+        </div> */}
         <div className="w-full">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -62,9 +76,7 @@ const Login = () => {
             placeholder="Enter your password"
           />
         </div>
-        <Button type="submit" className="w-full mt-4">
-          Login
-        </Button>
+        <Button type="submit" className="w-full mt-4">Login</Button>
         <p className="text-sm text-gray-500">
           Want to create an employee account?{" "}
           <span

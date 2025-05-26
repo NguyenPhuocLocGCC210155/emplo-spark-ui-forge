@@ -1,29 +1,47 @@
-
-import React, { useState } from "react";
+import axios from "@/api";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import React, { useState } from "react";
 
-interface LeaveRequestFormProps {
-  onSubmit: (date: Date) => void;
-}
-
-const LeaveRequestForm: React.FC<LeaveRequestFormProps> = ({ onSubmit }) => {
+const LeaveRequestForm: React.FC = () => {
   const [date, setDate] = useState<Date>();
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
+
     if (!date) {
       setError("Please select a date.");
       return;
     }
-    setError("");
-    onSubmit(date);
-    setDate(undefined);
+
+    try {
+      const token = localStorage.getItem("token"); // Assuming token is stored in localStorage
+      if (!token) throw new Error("No authentication token found");
+
+      await axios.post(
+        "/employee/leaves",
+        { date: date.toISOString().split("T")[0] }, // Send date in YYYY-MM-DD
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setSuccess("Leave request submitted!");
+      setDate(undefined);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || "Failed to submit request.");
+    }
   };
 
   return (
@@ -50,12 +68,15 @@ const LeaveRequestForm: React.FC<LeaveRequestFormProps> = ({ onSubmit }) => {
               selected={date}
               onSelect={setDate}
               initialFocus
-              className={cn("p-3 pointer-events-auto")}
+              className="p-3"
             />
           </PopoverContent>
         </Popover>
       </div>
+
       {error && <div className="text-red-500 text-sm">{error}</div>}
+      {success && <div className="text-green-500 text-sm">{success}</div>}
+
       <Button type="submit" className="w-full">
         Request Day Off
       </Button>
@@ -64,3 +85,4 @@ const LeaveRequestForm: React.FC<LeaveRequestFormProps> = ({ onSubmit }) => {
 };
 
 export default LeaveRequestForm;
+

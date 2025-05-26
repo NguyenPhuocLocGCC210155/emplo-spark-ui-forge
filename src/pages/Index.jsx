@@ -1,8 +1,8 @@
 
+import { Button } from "@/components/ui/button";
+import { List, User } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { User, List } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ const Index = () => {
   const handleRoleSelect = (role) => {
     localStorage.setItem("role", role);
     if (role === "employee") {
-      navigate("/employee");
+      navigate("/login");
     } else {
       navigate("/employer");
     }

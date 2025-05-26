@@ -1,79 +1,64 @@
-
-import React, { useState } from "react";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import axios from "@/api";
 import EmployeeTable from "@/components/EmployeeTable";
 import LeaveRequestForm from "@/components/LeaveRequestForm";
 import MyLeaveList from "@/components/MyLeaveList";
+import Navbar from "@/components/Navbar";
+import Sidebar from "@/components/Sidebar";
+import NotFound from "@/pages/NotFound";
 import { Employee, LeaveRequest } from "@/types";
-import { useNavigate, Routes, Route } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Route, Routes, useNavigate } from "react-router-dom";
 
-// Initial mock employees (simulate "all employees" view)
-const EMPLOYEES: Employee[] = [
-  {
-    id: 1,
-    name: "Alice Smith",
-    email: "alice.smith@company.com",
-    role: "Developer",
-    wage: 70000,
-    dayOffBalance: 12,
-  },
-  {
-    id: 2,
-    name: "Bob Johnson",
-    email: "bob.johnson@company.com",
-    role: "Designer",
-    wage: 67000,
-    dayOffBalance: 8,
-  },
-  {
-    id: 3,
-    name: "Carol Lee",
-    email: "carol.lee@company.com",
-    role: "QA Tester",
-    wage: 62000,
-    dayOffBalance: 15,
-  },
-  {
-    id: 4,
-    name: "David Brown",
-    email: "david.brown@company.com",
-    role: "Support",
-    wage: 55000,
-    dayOffBalance: 16,
-  },
-];
+// ✅ Import NotFound (hoặc tạo mới)
 
-const DEFAULT_EMPLOYEE_ID = 1; // Simulate currently logged in employee
+const DEFAULT_EMPLOYEE_ID = 1;
 
 const EmployeeDashboard: React.FC = () => {
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const navigate = useNavigate();
-  const employeeId = DEFAULT_EMPLOYEE_ID; // Simulated for demo
+  const employeeId = DEFAULT_EMPLOYEE_ID;
 
-  // Simulate leave request submission
+  // ✅ Kiểm tra role trước khi render
+  const role = localStorage.getItem("role");
+  if (role !== "employee") {
+    alert("You are not authorized to access this page");
+    return <NotFound />;
+  }
+
+  useEffect(() => {
+    async function fetchEmployees() {
+      try {
+        const res = await axios.get("/employee");
+        setEmployees(res.data);
+      } catch (error) {
+        console.error("Failed to fetch employees:", error);
+      }
+    }
+    fetchEmployees();
+  }, []);
+
   const handleLeaveRequest = (date: Date) => {
     setLeaveRequests((prev) => [
       ...prev,
       {
         id: prev.length + 1,
-        employeeId: employeeId,
+        employeeId,
         employeeName:
-          EMPLOYEES.find((e) => e.id === employeeId)?.name || "Unknown",
+          employees.find((e) => e.id === employeeId)?.name || "Unknown",
         date: date.toLocaleDateString(),
         status: "pending",
       },
     ]);
   };
 
-  // Role switching
   const handleRoleChange = (role: "employee" | "employer") => {
     localStorage.setItem("role", role);
     if (role === "employer") {
       navigate("/employer");
     }
   };
-  // Logout
+
   const handleLogout = () => {
     localStorage.removeItem("role");
     navigate("/");
@@ -81,7 +66,11 @@ const EmployeeDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-blue-50">
-      <Navbar currentRole="employee" onRoleChange={handleRoleChange} onLogout={handleLogout} />
+      <Navbar
+        currentRole="employee"
+        onRoleChange={handleRoleChange}
+        onLogout={handleLogout}
+      />
       <div className="flex w-full">
         <Sidebar currentRole="employee" />
         <main className="flex-1 px-6 py-8">
@@ -91,14 +80,12 @@ const EmployeeDashboard: React.FC = () => {
               element={
                 <div>
                   <h1 className="text-2xl font-bold mb-6">Employees</h1>
-                  <EmployeeTable
-                    employees={EMPLOYEES.map(({ wage, dayOffBalance, ...rest }) => rest)}
-                  />
+                  <EmployeeTable employees={employees} />
                   <div className="mt-10">
                     <h2 className="text-xl font-semibold mb-2">About</h2>
                     <p className="text-gray-500 mb-1">
-                      View names, emails, and roles of your coworkers. 
-                      Wage and day-off balance are not visible here.
+                      View names, emails, and roles of your coworkers. Wage and
+                      day-off balance are not visible here.
                     </p>
                   </div>
                 </div>
@@ -109,7 +96,7 @@ const EmployeeDashboard: React.FC = () => {
               element={
                 <div className="max-w-lg">
                   <h1 className="text-2xl font-bold mb-6">Request a Day Off</h1>
-                  <LeaveRequestForm onSubmit={handleLeaveRequest} />
+                  <LeaveRequestForm />
                 </div>
               }
             />
@@ -117,7 +104,7 @@ const EmployeeDashboard: React.FC = () => {
               path="my-leaves"
               element={
                 <div>
-                  <MyLeaveList leaveRequests={leaveRequests} employeeId={employeeId} />
+                  <MyLeaveList />
                 </div>
               }
             />
