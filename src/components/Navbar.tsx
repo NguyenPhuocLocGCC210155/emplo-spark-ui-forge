@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { List, User } from "lucide-react";
-import { React, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export interface NavbarProps {
@@ -24,6 +24,14 @@ const Navbar: React.FC<NavbarProps> = ({
       setGmail(storedGmail);
     }
   }, []);
+
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("email"); // nếu bạn có lưu
+    navigate("/login"); // hoặc "/"
+  };
 
   return (
     <nav className="h-14 w-full flex items-center justify-between bg-white border-b px-6 shadow-sm z-40">
@@ -55,7 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({
         <h1 className="text-xl font-bold text-blue-600">
           {gmail ? gmail : "No Gmail found"}
         </h1>
-        <Button variant="outline" size="sm" onClick={onLogout}>
+        <Button variant="outline" size="sm" onClick={handleLogout}>
           Log out
         </Button>
       </div>
