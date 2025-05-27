@@ -13,7 +13,7 @@ const Index = () => {
     if (role === "employee") {
       navigate("/login");
     } else {
-      navigate("/employer");
+      navigate("/login");
     }
   };
 
