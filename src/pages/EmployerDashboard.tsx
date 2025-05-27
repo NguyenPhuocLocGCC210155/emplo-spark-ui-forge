@@ -51,7 +51,7 @@ const EmployerDashboard: React.FC = () => {
           email: e.email,
           role: e.role,
           wage: e.wage ?? 0,
-          dayOffBalance: 10, // default fallback if not returned by API
+          dayOffBalance: e.day_off , // default fallback if not returned by API
         }));
 
         setEmployees(mapped);
